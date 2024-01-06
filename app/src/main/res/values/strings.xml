@@ -10,4 +10,6 @@
     <string name="menu_home">Home</string>
     <string name="menu_gallery">Gallery</string>
     <string name="menu_slideshow">Slideshow</string>
+    <string name="home_camera_desc">Take picture of Ingredient</string>
+    <string name="home_gallery_desc">Navigate to local gallery</string>
 </resources>
