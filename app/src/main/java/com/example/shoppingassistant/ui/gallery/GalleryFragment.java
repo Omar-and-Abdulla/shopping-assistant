@@ -24,8 +24,12 @@ public class GalleryFragment extends Fragment {
         binding = FragmentGalleryBinding.inflate(inflater, container, false);
         View root = binding.getRoot();
 
-        final TextView textView = binding.textGallery;
-        galleryViewModel.getText().observe(getViewLifecycleOwner(), textView::setText);
+        String arg = GalleryFragmentArgs.fromBundle(getArguments()).getArgImage();
+        binding.galleryIngredientDetail.setText(arg);
+//        }
+//        GalleryFragmentArgs.fromBundle(getArguments()).getArgImage();
+//        final TextView textView = binding.textGallery;
+//        galleryViewModel.getText().observe(getViewLifecycleOwner(), textView::setText);
         return root;
     }
 

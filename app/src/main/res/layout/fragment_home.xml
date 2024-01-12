@@ -21,8 +21,7 @@
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintBottom_toBottomOf="parent"
         android:layout_marginBottom="16dp"
-        app:srcCompat="@drawable/ic_camera_home"
-        app:fabSize="auto"/>
+        app:srcCompat="@drawable/ic_camera_home"/>
 
     <com.google.android.material.floatingactionbutton.FloatingActionButton
         android:id="@+id/home_gallery"
@@ -33,7 +32,6 @@
         app:layout_constraintBottom_toTopOf="@id/take_picture"
         android:layout_marginBottom="16dp"
         android:layout_marginEnd="16dp"
-        app:srcCompat="@drawable/ic_menu_gallery"
-        app:fabSize="auto"/>
+        app:srcCompat="@drawable/ic_menu_gallery"/>
 
 </androidx.constraintlayout.widget.ConstraintLayout>

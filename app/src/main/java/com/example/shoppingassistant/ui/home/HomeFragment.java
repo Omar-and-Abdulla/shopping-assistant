@@ -1,12 +1,16 @@
 package com.example.shoppingassistant.ui.home;
 
 import android.Manifest;
+import android.app.Activity;
+import android.content.ContentResolver;
+import android.content.Intent;
 import android.content.pm.PackageManager;
+import android.net.Uri;
 import android.os.Bundle;
+import android.provider.MediaStore;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.RelativeLayout;
 import android.widget.Toast;
 
 import androidx.activity.result.ActivityResultCallback;
@@ -16,16 +20,13 @@ import androidx.annotation.NonNull;
 import androidx.camera.core.CameraSelector;
 import androidx.camera.core.Preview;
 import androidx.camera.lifecycle.ProcessCameraProvider;
-import androidx.constraintlayout.widget.ConstraintLayout;
-import androidx.constraintlayout.widget.ConstraintSet;
 import androidx.core.content.ContextCompat;
 import androidx.fragment.app.Fragment;
 import androidx.lifecycle.LifecycleOwner;
 import androidx.lifecycle.ViewModelProvider;
+import androidx.navigation.Navigation;
 
-import com.example.shoppingassistant.R;
 import com.example.shoppingassistant.databinding.FragmentHomeBinding;
-import com.google.android.material.floatingactionbutton.FloatingActionButton;
 import com.google.common.util.concurrent.ListenableFuture;
 
 import java.util.Map;
@@ -40,7 +41,6 @@ public class HomeFragment extends Fragment {
     // int for front facing camera
     private static final int BACK_CAMERA = CameraSelector.LENS_FACING_BACK;
     private ProcessCameraProvider cameraProvider;
-    private FloatingActionButton b2;
 
     /**
      * <String[]>: To make it extendable for multiple permissions
@@ -78,6 +78,29 @@ public class HomeFragment extends Fragment {
             requestPermissionLauncher.launch(new String[]{CAMERA_PERMISSION});
         }
 
+        // pick a picture and send URI to ResultFragment
+        ActivityResultLauncher<Intent> launchGalleryActivity = registerForActivityResult(
+                new ActivityResultContracts.StartActivityForResult(),
+                result -> {
+                    if (result.getResultCode() == Activity.RESULT_OK) {
+                        Intent data = result.getData();
+                        if (data != null && data.getData() != null) {
+                            String uriArg = data.getData().toString();
+                            HomeFragmentDirections.ActionNavHomeToNavResult action = HomeFragmentDirections.actionNavHomeToNavResult(uriArg);
+                            Navigation.findNavController(root).navigate(action);
+                        }
+                    }
+                }
+        );
+
+        binding.homeGallery.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                Intent intent = new Intent(Intent.ACTION_GET_CONTENT, MediaStore.Images.Media.EXTERNAL_CONTENT_URI);
+                launchGalleryActivity.launch(intent);
+            }
+        });
+
         return root;
     }
 
@@ -109,13 +132,16 @@ public class HomeFragment extends Fragment {
     private void bindUseCasesAndCamera(ProcessCameraProvider cameraProvider, int cameraType) {
         Preview preview = new Preview.Builder().build();
         preview.setSurfaceProvider(binding.cameraView.getSurfaceProvider());
+//        ImageCapture imageCapture = new ImageCapture.Builder().build();
+//        imageCapture.t
         CameraSelector cameraSelector = new CameraSelector.Builder().requireLensFacing(cameraType).build();
         cameraProvider.bindToLifecycle((LifecycleOwner) this, cameraSelector, preview);
     }
 
     @Override
     public void onDestroyView() {
-        cameraProvider.unbindAll();
+        if (cameraProvider != null)
+            cameraProvider.unbindAll();
         super.onDestroyView();
         binding = null;
     }
