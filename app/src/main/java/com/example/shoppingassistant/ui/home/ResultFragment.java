@@ -24,12 +24,16 @@ import java.util.List;
 
 public class ResultFragment extends Fragment {
     private FragmentResultBinding binding;
-    private TextRecognizer recognizer = TextRecognition.getClient(TextRecognizerOptions.DEFAULT_OPTIONS);
+    private static final TextRecognizer recognizer = TextRecognition.getClient(TextRecognizerOptions.DEFAULT_OPTIONS);
+    private GraphicOverlay mgraphicOverlay;
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater,
                              ViewGroup container, Bundle savedInstanceState) {
         binding = FragmentResultBinding.inflate(inflater, container, false);
         View root = binding.getRoot();
+
+//        TODO
+//        mgraphicOverlay = binding.resultGraphicOverlay;
 
         String uriArg = ResultFragmentArgs.fromBundle(getArguments()).getUriArg();
         Uri uri = Uri.parse(uriArg);
@@ -68,8 +72,23 @@ public class ResultFragment extends Fragment {
         if (blocks.size() == 0) {
             binding.resultIngredientDetail.setText("No Texts found");
         } else {
-            String text = texts.getText();
-            binding.resultIngredientDetail.setText(text);
+
+//            TODO - Adding overlay to the existing image view
+//            mgraphicOverlay.clear();
+            StringBuilder text = new StringBuilder();
+            for (int i = 0; i < blocks.size(); ++i) {
+                text.append(String.format("This is block %d\n", i));
+                text.append(String.format("%s\n\n", blocks.get(i).getText()));
+//                List<Text.Line> lines = blocks.get(i).getLines();
+//                for (int k = 0; k < lines.size(); ++k) {
+//                    List<Text.Element> elements = lines.get(k).getElements();
+//                    for (int j = 0; j < elements.size(); ++j) {
+//                        GraphicOverlay.Graphic textGraphic = new TextGraphic(mgraphicOverlay, elements.get(j));
+//                        mgraphicOverlay.add(textGraphic);
+//                    }
+//                }
+            }
+            binding.resultIngredientDetail.setText(text.toString());
         }
     }
 
