@@ -9,13 +9,41 @@
         android:id="@+id/nav_home"
         android:name="com.example.shoppingassistant.ui.home.HomeFragment"
         android:label="@string/menu_home"
-        tools:layout="@layout/fragment_home" />
+        tools:layout="@layout/fragment_home" >
+        <action
+            android:id="@+id/action_nav_home_to_nav_result"
+            app:destination="@id/nav_result" />
+    </fragment>
+<!--        <action-->
+<!--            android:id="@+id/action_nav_home_to_nav_gallery"-->
+<!--            app:destination="@id/nav_gallery">-->
+<!--            <argument-->
+<!--                android:name="arg_image"-->
+<!--                app:argType="string" />-->
+<!--        </action>-->
+<!--    </fragment>-->
+
+    <fragment
+        android:id="@+id/nav_result"
+        android:name="com.example.shoppingassistant.ui.home.result.ResultFragment"
+        android:label="Result"
+        tools:layout="@layout/fragment_result" >
+<!--        <argument-->
+<!--            android:name="uri_arg"-->
+<!--            app:argType="string"-->
+<!--            app:nullable="false"/>-->
+    </fragment>
 
     <fragment
         android:id="@+id/nav_gallery"
         android:name="com.example.shoppingassistant.ui.gallery.GalleryFragment"
         android:label="@string/menu_gallery"
-        tools:layout="@layout/fragment_gallery" />
+        tools:layout="@layout/fragment_gallery" >
+        <argument
+            android:name="arg_image"
+            app:argType="string"
+            android:defaultValue="HELLO FROM DEFAULT!" />
+    </fragment>
 
     <fragment
         android:id="@+id/nav_slideshow"

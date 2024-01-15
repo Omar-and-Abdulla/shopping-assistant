@@ -1,12 +1,17 @@
 package com.example.shoppingassistant.ui.home;
 
 import android.Manifest;
+import android.app.Activity;
+import android.content.ContentResolver;
+import android.content.Intent;
 import android.content.pm.PackageManager;
+import android.graphics.Bitmap;
+import android.net.Uri;
 import android.os.Bundle;
+import android.provider.MediaStore;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.RelativeLayout;
 import android.widget.Toast;
 
 import androidx.activity.result.ActivityResultCallback;
@@ -14,22 +19,29 @@ import androidx.activity.result.ActivityResultLauncher;
 import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.annotation.NonNull;
 import androidx.camera.core.CameraSelector;
+import androidx.camera.core.ImageCapture;
+import androidx.camera.core.ImageCaptureException;
+import androidx.camera.core.ImageProxy;
 import androidx.camera.core.Preview;
 import androidx.camera.lifecycle.ProcessCameraProvider;
-import androidx.constraintlayout.widget.ConstraintLayout;
-import androidx.constraintlayout.widget.ConstraintSet;
 import androidx.core.content.ContextCompat;
 import androidx.fragment.app.Fragment;
 import androidx.lifecycle.LifecycleOwner;
+import androidx.lifecycle.MutableLiveData;
 import androidx.lifecycle.ViewModelProvider;
+import androidx.navigation.Navigation;
 
-import com.example.shoppingassistant.R;
 import com.example.shoppingassistant.databinding.FragmentHomeBinding;
-import com.google.android.material.floatingactionbutton.FloatingActionButton;
 import com.google.common.util.concurrent.ListenableFuture;
 
 import java.util.Map;
+import java.util.concurrent.Executors;
 
+/**
+ * Navigates to result fragment twice -
+ *  1. When selecting an image by clicking gallery button
+ *  2. When taking picture of an image
+ */
 public class HomeFragment extends Fragment {
 
     private FragmentHomeBinding binding;
@@ -40,7 +52,7 @@ public class HomeFragment extends Fragment {
     // int for front facing camera
     private static final int BACK_CAMERA = CameraSelector.LENS_FACING_BACK;
     private ProcessCameraProvider cameraProvider;
-    private FloatingActionButton b2;
+    ImageCapture imageCapture;
 
     /**
      * <String[]>: To make it extendable for multiple permissions
@@ -65,18 +77,73 @@ public class HomeFragment extends Fragment {
                              ViewGroup container, Bundle savedInstanceState) {
 
         HomeViewModel homeViewModel =
-                new ViewModelProvider(this).get(HomeViewModel.class);
+                new ViewModelProvider(requireActivity()).get(HomeViewModel.class);
 
         binding = FragmentHomeBinding.inflate(inflater, container, false);
         View root = binding.getRoot();
 
         // getting camera permission
         if (hasPermission(CAMERA_PERMISSION)) {
-            System.out.println("Have already gotten permission");
             startCamera();
         } else {
             requestPermissionLauncher.launch(new String[]{CAMERA_PERMISSION});
         }
+
+        // selecting picture from gallery
+        ActivityResultLauncher<Intent> launchGalleryActivity = registerForActivityResult(
+                new ActivityResultContracts.StartActivityForResult(),
+                result -> {
+                    if (result.getResultCode() == Activity.RESULT_OK) {
+                        Intent data = result.getData();
+                        if (data != null && data.getData() != null) {
+                            Uri uriArg = data.getData();
+                            try {
+                                Bitmap image = MediaStore.Images.Media.getBitmap(requireContext().getContentResolver(), uriArg);
+                                homeViewModel.setImage(new MutableLiveData<>(image));
+                                Navigation.findNavController(root).navigate(HomeFragmentDirections.actionNavHomeToNavResult());
+                            } catch (Exception e) {
+                                e.printStackTrace();
+                                Toast.makeText(
+                                        requireContext(),
+                                        "Couldn't convert selected image!",
+                                        Toast.LENGTH_SHORT).show();
+                            }
+                        }
+                    }
+                }
+        );
+        binding.homeGallery.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                Intent intent = new Intent(Intent.ACTION_GET_CONTENT, MediaStore.Images.Media.EXTERNAL_CONTENT_URI);
+                launchGalleryActivity.launch(intent);
+            }
+        });
+
+        // taking picture from camera
+        binding.takePicture.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                imageCapture.takePicture(ContextCompat.getMainExecutor(requireContext()), new ImageCapture.OnImageCapturedCallback() {
+                    @Override
+                    public void onCaptureSuccess(@NonNull ImageProxy image) {
+                        super.onCaptureSuccess(image);
+                        homeViewModel.setImage(new MutableLiveData<>(image.toBitmap()));
+                        System.out.println("Took picture from camera");
+                        Navigation.findNavController(root).navigate(HomeFragmentDirections.actionNavHomeToNavResult());
+                    }
+                    @Override
+                    public void onError(@NonNull ImageCaptureException exception) {
+                        super.onError(exception);
+                        exception.printStackTrace();
+                        Toast.makeText(
+                                requireContext(),
+                                "Couldn't retrieve captured image",
+                                Toast.LENGTH_SHORT).show();
+                    }
+                });
+            }
+        });
 
         return root;
     }
@@ -109,13 +176,17 @@ public class HomeFragment extends Fragment {
     private void bindUseCasesAndCamera(ProcessCameraProvider cameraProvider, int cameraType) {
         Preview preview = new Preview.Builder().build();
         preview.setSurfaceProvider(binding.cameraView.getSurfaceProvider());
+        imageCapture = new ImageCapture.Builder()
+                                    .setCaptureMode(ImageCapture.CAPTURE_MODE_MAXIMIZE_QUALITY)
+                                    .build();
         CameraSelector cameraSelector = new CameraSelector.Builder().requireLensFacing(cameraType).build();
-        cameraProvider.bindToLifecycle((LifecycleOwner) this, cameraSelector, preview);
+        cameraProvider.bindToLifecycle((LifecycleOwner) this, cameraSelector, imageCapture, preview);
     }
 
     @Override
     public void onDestroyView() {
-        cameraProvider.unbindAll();
+        if (cameraProvider != null)
+            cameraProvider.unbindAll();
         super.onDestroyView();
         binding = null;
     }

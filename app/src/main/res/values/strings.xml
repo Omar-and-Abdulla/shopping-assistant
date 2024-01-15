@@ -12,4 +12,6 @@
     <string name="menu_slideshow">Slideshow</string>
     <string name="home_camera_desc">Take picture of Ingredient</string>
     <string name="home_gallery_desc">Navigate to local gallery</string>
+    <string name="gallery_image_desc">Image of ingredients</string>
+    <string name="result_back_desc">Go back to Home Screen</string>
 </resources>
