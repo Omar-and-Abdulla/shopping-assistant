@@ -1,19 +1,23 @@
 package com.example.shoppingassistant.ui.home;
 
+import android.graphics.Bitmap;
+
 import androidx.lifecycle.LiveData;
 import androidx.lifecycle.MutableLiveData;
 import androidx.lifecycle.ViewModel;
 
 public class HomeViewModel extends ViewModel {
-
-    private final MutableLiveData<String> mText;
+    private MutableLiveData<Bitmap> image;
 
     public HomeViewModel() {
-        mText = new MutableLiveData<>();
-        mText.setValue("This is home fragment");
+        image = new MutableLiveData<>();
     }
 
-    public LiveData<String> getText() {
-        return mText;
+    public MutableLiveData<Bitmap> getImage() {
+        return image;
+    }
+
+    public void setImage(MutableLiveData<Bitmap> image) {
+        this.image = image;
     }
 }

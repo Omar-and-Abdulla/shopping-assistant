@@ -1,4 +1,4 @@
-package com.example.shoppingassistant.ui.home;
+package com.example.shoppingassistant.ui.home.result;
 
 import android.graphics.Canvas;
 import android.graphics.Color;

@@ -1,12 +1,10 @@
-package com.example.shoppingassistant.ui.home;
+package com.example.shoppingassistant.ui.home.result;
 
 import android.content.Context;
 import android.graphics.Canvas;
 import android.hardware.camera2.CameraCharacteristics;
 import android.util.AttributeSet;
 import android.view.View;
-
-import androidx.annotation.Nullable;
 
 import java.util.HashSet;
 import java.util.Set;
