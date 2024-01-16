@@ -18,11 +18,11 @@
             <ImageView
                 android:id="@+id/result_ingredient_image_view"
                 android:layout_width="match_parent"
-                android:layout_height="wrap_content"
+                android:layout_height="450dp"
                 app:layout_constraintEnd_toEndOf="parent"
                 app:layout_constraintStart_toStartOf="parent"
                 app:layout_constraintTop_toTopOf="parent"
-                app:layout_constraintBottom_toTopOf="@id/result_ingredient_detail"/>
+                app:layout_constraintBottom_toTopOf="@id/result_ingredient_detail" />
 <!--            TODO-->
 <!--            <com.example.shoppingassistant.ui.home.results.GraphicOverlay-->
 <!--                android:id="@+id/result_graphic_overlay"-->

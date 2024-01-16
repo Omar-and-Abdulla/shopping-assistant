@@ -9,7 +9,9 @@ import android.graphics.Bitmap;
 import android.net.Uri;
 import android.os.Bundle;
 import android.provider.MediaStore;
+import android.view.Display;
 import android.view.LayoutInflater;
+import android.view.Surface;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Toast;
@@ -38,8 +40,8 @@ import java.util.Map;
 import java.util.concurrent.Executors;
 
 /**
- * Navigates to result fragment twice -
- *  1. When selecting an image by clicking gallery button
+ * Navigates to result fragment 2 places -
+ *  1. When selecting an image after clicking gallery button
  *  2. When taking picture of an image
  */
 public class HomeFragment extends Fragment {
@@ -99,7 +101,8 @@ public class HomeFragment extends Fragment {
                             Uri uriArg = data.getData();
                             try {
                                 Bitmap image = MediaStore.Images.Media.getBitmap(requireContext().getContentResolver(), uriArg);
-                                homeViewModel.setImage(new MutableLiveData<>(image));
+                                homeViewModel.setImage(image);
+                                homeViewModel.setRotatedDegree(0);
                                 Navigation.findNavController(root).navigate(HomeFragmentDirections.actionNavHomeToNavResult());
                             } catch (Exception e) {
                                 e.printStackTrace();
@@ -128,8 +131,9 @@ public class HomeFragment extends Fragment {
                     @Override
                     public void onCaptureSuccess(@NonNull ImageProxy image) {
                         super.onCaptureSuccess(image);
-                        homeViewModel.setImage(new MutableLiveData<>(image.toBitmap()));
-                        System.out.println("Took picture from camera");
+                        System.out.println("Captured image rotation needed - " + image.getImageInfo().getRotationDegrees());
+                        homeViewModel.setImage(image.toBitmap());
+                        homeViewModel.setRotatedDegree(image.getImageInfo().getRotationDegrees());
                         Navigation.findNavController(root).navigate(HomeFragmentDirections.actionNavHomeToNavResult());
                     }
                     @Override
@@ -177,8 +181,8 @@ public class HomeFragment extends Fragment {
         Preview preview = new Preview.Builder().build();
         preview.setSurfaceProvider(binding.cameraView.getSurfaceProvider());
         imageCapture = new ImageCapture.Builder()
-                                    .setCaptureMode(ImageCapture.CAPTURE_MODE_MAXIMIZE_QUALITY)
-                                    .build();
+                .setCaptureMode(ImageCapture.CAPTURE_MODE_MAXIMIZE_QUALITY)
+                .build();
         CameraSelector cameraSelector = new CameraSelector.Builder().requireLensFacing(cameraType).build();
         cameraProvider.bindToLifecycle((LifecycleOwner) this, cameraSelector, imageCapture, preview);
     }
