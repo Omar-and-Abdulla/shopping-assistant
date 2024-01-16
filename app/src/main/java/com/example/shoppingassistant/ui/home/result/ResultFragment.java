@@ -1,6 +1,7 @@
 package com.example.shoppingassistant.ui.home.result;
 
 import android.graphics.Bitmap;
+import android.graphics.Matrix;
 import android.net.Uri;
 import android.os.Bundle;
 import android.provider.MediaStore;
@@ -39,7 +40,12 @@ public class ResultFragment extends Fragment {
 //        TODO
 //        mgraphicOverlay = binding.resultGraphicOverlay;
 
-        Bitmap image = homeViewModel.getImage().getValue();
+        // get image and apply appropriate rotation if needed
+        Bitmap image = homeViewModel.getImage();
+        Integer rotatedDegree = 0;
+        if (homeViewModel.getRotatedDegree() != null)
+            rotatedDegree = homeViewModel.getRotatedDegree();
+        image = rotateBitmap(image, rotatedDegree);
 
         // setting image in imageview
         binding.resultIngredientImageView.setImageBitmap(image);
@@ -61,6 +67,12 @@ public class ResultFragment extends Fragment {
 //                });
 
         return root;
+    }
+
+    private Bitmap rotateBitmap(Bitmap source, int rotatedDegree) {
+        Matrix matrix = new Matrix();
+        matrix.postRotate(rotatedDegree);
+        return Bitmap.createBitmap(source, 0, 0, source.getWidth(), source.getHeight(), matrix, true);
     }
 
     /**
