@@ -15,4 +15,3 @@ dependencyResolutionManagement {
 
 rootProject.name = "ShoppingAssistant"
 include(":app")
- 

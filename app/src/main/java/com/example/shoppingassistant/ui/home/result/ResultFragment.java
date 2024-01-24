@@ -3,32 +3,36 @@ package com.example.shoppingassistant.ui.home.result;
 import android.graphics.Bitmap;
 import android.graphics.Matrix;
 import android.net.Uri;
+import android.os.Build;
 import android.os.Bundle;
 import android.provider.MediaStore;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 
 import androidx.annotation.NonNull;
+import androidx.exifinterface.media.ExifInterface;
 import androidx.fragment.app.Fragment;
 import androidx.lifecycle.ViewModelProvider;
 
 import com.example.shoppingassistant.databinding.FragmentResultBinding;
 import com.example.shoppingassistant.ui.home.HomeViewModel;
-import com.google.android.gms.tasks.OnFailureListener;
-import com.google.android.gms.tasks.OnSuccessListener;
-import com.google.mlkit.vision.common.InputImage;
 import com.google.mlkit.vision.text.Text;
 import com.google.mlkit.vision.text.TextRecognition;
 import com.google.mlkit.vision.text.TextRecognizer;
 import com.google.mlkit.vision.text.latin.TextRecognizerOptions;
 
+import java.io.IOException;
+import java.io.InputStream;
 import java.util.List;
+import java.util.Locale;
 
 public class ResultFragment extends Fragment {
     private FragmentResultBinding binding;
     private static final TextRecognizer recognizer = TextRecognition.getClient(TextRecognizerOptions.DEFAULT_OPTIONS);
 //    private GraphicOverlay mgraphicOverlay;
+    private static final String LOG_TAG = "ResultFragment";
 
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater,
@@ -41,14 +45,39 @@ public class ResultFragment extends Fragment {
 //        mgraphicOverlay = binding.resultGraphicOverlay;
 
         // get image and apply appropriate rotation if needed
-        Bitmap image = homeViewModel.getImage();
-        Integer rotatedDegree = 0;
-        if (homeViewModel.getRotatedDegree() != null)
-            rotatedDegree = homeViewModel.getRotatedDegree();
-        image = rotateBitmap(image, rotatedDegree);
+        Uri uri = homeViewModel.getImage();
+//        int rotatedDegree = getRotationDegree(uri);
+//        Log.d(LOG_TAG, String.format("Rotated degree from result fragment %d", rotatedDegree));
 
-        // setting image in imageview
-        binding.resultIngredientImageView.setImageBitmap(image);
+//        if (homeViewModel.getRotatedDegree() != null)
+//            rotatedDegree = homeViewModel.getRotatedDegree();
+        try {
+            Bitmap image = MediaStore.Images.Media.getBitmap(requireContext().getContentResolver(), uri);
+            // setting image in imageview
+            binding.resultIngredientImageView.setImageBitmap(image);
+        } catch (Exception e) {
+            Log.e(LOG_TAG, "Error in URI to BitMap conversion", e);
+        }
+//        Bitmap image = rotateBitmap(, rotatedDegree);
+
+//        // cropping the image
+//        ActivityResultLauncher<Intent> launchCropActivity = registerForActivityResult(
+//                new ActivityResultContracts.StartActivityForResult(),
+//                result -> {
+//                    System.out.println("Reached results");
+//                }
+//        );
+//        Intent i = new Intent("com.android.camera.action.CROP");
+//        i.setType("image/*");
+//        List<ResolveInfo> list = requireActivity().getPackageManager().queryIntentActivities(i, 0);
+//        int size = list.size();
+//        if (size == 0) {
+//            Toast.makeText(requireContext(),
+//                    "Can not find image crop app",
+//                    Toast.LENGTH_SHORT).show();
+//        } else {
+//            i.setData();
+//        }
 
 //        // extracting ingredient details
 //        InputImage inputImage = InputImage.fromBitmap(image, 0);
@@ -69,11 +98,44 @@ public class ResultFragment extends Fragment {
         return root;
     }
 
-    private Bitmap rotateBitmap(Bitmap source, int rotatedDegree) {
-        Matrix matrix = new Matrix();
-        matrix.postRotate(rotatedDegree);
-        return Bitmap.createBitmap(source, 0, 0, source.getWidth(), source.getHeight(), matrix, true);
-    }
+//    private int getRotationDegree(Uri uri) {
+//        InputStream input = null;
+//        try {
+//            input = requireContext().getContentResolver().openInputStream(uri);
+//            if (input != null) {
+//                ExifInterface exifInterface = new ExifInterface(input);
+//                int orientation = exifInterface.getAttributeInt(
+//                        ExifInterface.TAG_ORIENTATION,
+//                        ExifInterface.ORIENTATION_NORMAL
+//                );
+//                return getRotationDegreeFromOrientation(orientation);
+//            }
+//        } catch (IOException e) {
+//            Log.e(LOG_TAG, "Error reading Exif data", e);
+//        } finally {
+//            try {
+//                if (input != null) {
+//                    input.close();
+//                }
+//            } catch (IOException e) {
+//                Log.e(LOG_TAG, "Error closing input stream from URI", e);
+//            }
+//        }
+//        return 0;
+//    }
+//
+//    private int getRotationDegreeFromOrientation(int orientation) {
+//        switch (orientation) {
+//            case ExifInterface.ORIENTATION_ROTATE_90:
+//                return 90;
+//            case ExifInterface.ORIENTATION_ROTATE_180:
+//                return 180;
+//            case ExifInterface.ORIENTATION_ROTATE_270:
+//                return 270;
+//            default:
+//                return 0;
+//        }
+//    }
 
     /**
      * Sets ingretedientDetails <TextView> in layout with
@@ -107,6 +169,11 @@ public class ResultFragment extends Fragment {
 
     @Override
     public void onDestroyView() {
+        HomeViewModel homeViewModel = new ViewModelProvider(requireActivity()).get(HomeViewModel.class);
+        Uri uri = homeViewModel.getImage();
+        if (uri != null && Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+            requireActivity().getContentResolver().delete(uri, null);
+        }
         super.onDestroyView();
         binding = null;
     }
