@@ -57,8 +57,11 @@ public class HomeFragment extends Fragment {
     private FragmentHomeBinding binding;
     private final String LOG_TAG = "HomeFragment";
 
-    // camera permission string from manifest
+    // camera permission string
     private static final String CAMERA_PERMISSION = Manifest.permission.CAMERA;
+
+    // Media-Image permission string
+    private static final String MEDIA_IMAGE_READ_PERMISSION = Manifest.permission.READ_MEDIA_IMAGES;
 
     // int for front facing camera
     private static final int BACK_CAMERA = CameraSelector.LENS_FACING_BACK;
@@ -70,21 +73,20 @@ public class HomeFragment extends Fragment {
     /**
      * <String[]>: To make it extendable for multiple permissions
      */
-    private final ActivityResultLauncher<String[]> requestPermissionLauncher = registerForActivityResult(
+    private final ActivityResultLauncher<String[]> requestMultiPermissionLauncher = registerForActivityResult(
             new ActivityResultContracts.RequestMultiplePermissions(),
             new ActivityResultCallback<Map<String, Boolean>>() {
                 @Override
                 public void onActivityResult(Map<String, Boolean> o) {
                     if (Boolean.TRUE.equals(o.get(CAMERA_PERMISSION))) {
                         startCamera();
-                    } else {
-                        Toast t = new Toast(getContext());
-                        t.setText("Need camera for detection.");
-                        t.show();
                     }
                 }
             }
     );
+
+    // To launch gallery
+    ActivityResultLauncher<Intent> launchGalleryActivity;
 
     // to launch Crop Image
     private ActivityResultLauncher<CropImageContractOptions> cropLauncher;
@@ -102,7 +104,7 @@ public class HomeFragment extends Fragment {
         if (hasPermission(CAMERA_PERMISSION)) {
             startCamera();
         } else {
-            requestPermissionLauncher.launch(new String[]{CAMERA_PERMISSION});
+            requestMultiPermissionLauncher.launch(new String[]{CAMERA_PERMISSION});
         }
 
         //  Initializing cropping launcher
@@ -111,7 +113,7 @@ public class HomeFragment extends Fragment {
                 result -> {
                     if (result.isSuccessful()) {
                         Uri uri = result.getUriContent();
-                        homeViewModel.setImage(uri);
+                        homeViewModel.setUri(uri);
                         Navigation.findNavController(root).navigate(HomeFragmentDirections.actionNavHomeToNavResult());
                     } else {
                         Log.e(LOG_TAG, "Couldn't crop image for some in (ActivityResultLauncher<CropImageContractOptions>) cropLauncher");
@@ -120,7 +122,7 @@ public class HomeFragment extends Fragment {
         );
 
         // Activity Result launcher for gallery
-        ActivityResultLauncher<Intent> launchGalleryActivity = registerForActivityResult(
+        launchGalleryActivity = registerForActivityResult(
                 new ActivityResultContracts.StartActivityForResult(),
                 result -> {
                     if (result.getResultCode() == Activity.RESULT_OK) {
@@ -128,16 +130,10 @@ public class HomeFragment extends Fragment {
                         if (data != null && data.getData() != null) {
                             Uri uri = data.getData();
                             try {
-                                // Temporary copy of image
-                                Bitmap image = MediaStore.Images.Media.getBitmap(requireContext().getContentResolver(), uri);
-                                tempCopy = saveImage(image);
-                                launchCropper(tempCopy);
+                                launchCropper(uri);
                             } catch (Exception e) {
                                 e.printStackTrace();
-                                Toast.makeText(
-                                        requireContext(),
-                                        "Couldn't convert selected image!",
-                                        Toast.LENGTH_SHORT).show();
+                                Log.e(LOG_TAG, "Couldn't crop selected image.");
                             }
                         }
                     }
@@ -146,7 +142,8 @@ public class HomeFragment extends Fragment {
         binding.homeGallery.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                Intent intent = new Intent(Intent.ACTION_GET_CONTENT, MediaStore.Images.Media.EXTERNAL_CONTENT_URI);
+                // no need permission since accessing internal storage
+                Intent intent = new Intent(Intent.ACTION_GET_CONTENT, MediaStore.Images.Media.INTERNAL_CONTENT_URI);
                 launchGalleryActivity.launch(intent);
             }
         });
@@ -160,7 +157,6 @@ public class HomeFragment extends Fragment {
                     public void onCaptureSuccess(@NonNull ImageProxy image) {
                         super.onCaptureSuccess(image);
                         Bitmap rotatedImage = rotateBitmap(image.toBitmap(), image.getImageInfo().getRotationDegrees());
-                        // Temporary copy of image
                         tempCopy = saveImage(rotatedImage);
                         launchCropper(tempCopy);
                     }
@@ -221,7 +217,6 @@ public class HomeFragment extends Fragment {
                     // local function used to bind use cases foa a camera provider and
                     // selects a camera of choice
                     camera = configCamera(cameraProvider, BACK_CAMERA);
-
                 } catch (Exception e) {
                     e.printStackTrace();
                 }
