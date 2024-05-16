@@ -13,5 +13,6 @@ dependencyResolutionManagement {
     }
 }
 
-rootProject.name = "ShoppingAssistant"
+rootProject.name = "shopping-assistant"
 include(":app")
+include(":openCV")

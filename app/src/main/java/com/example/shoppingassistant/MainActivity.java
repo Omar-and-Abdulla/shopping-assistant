@@ -1,6 +1,7 @@
 package com.example.shoppingassistant;
 
 import android.os.Bundle;
+import android.util.Log;
 import android.view.View;
 import android.view.Menu;
 
@@ -16,10 +17,13 @@ import androidx.appcompat.app.AppCompatActivity;
 
 import com.example.shoppingassistant.databinding.ActivityMainBinding;
 
+import org.opencv.android.OpenCVLoader;
+
 public class MainActivity extends AppCompatActivity {
 
     private AppBarConfiguration mAppBarConfiguration;
     private ActivityMainBinding binding;
+    private static final String LOG_TAG = "MainActivity";
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
