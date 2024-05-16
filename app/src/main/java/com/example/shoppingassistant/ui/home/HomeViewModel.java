@@ -11,17 +11,28 @@ import androidx.lifecycle.ViewModel;
  * Assuming permissions have been granted for accessing media
  */
 public class HomeViewModel extends ViewModel {
-    private MutableLiveData<Uri> uri;
+
+    private MutableLiveData<Uri> uriIngredient;
+    private MutableLiveData<Uri> uriBarcode;
 
     public HomeViewModel() {
-        uri = new MutableLiveData<>();
+        uriIngredient = new MutableLiveData<>();
+        uriBarcode = new MutableLiveData<>();
     }
 
-    public Uri getUri() {
-        return uri.getValue();
+    public Uri getUriIngredient() {
+        return uriIngredient.getValue();
     }
 
-    public void setUri(Uri image) {
-        this.uri.setValue(image);
+    public void setUriIngredient(Uri uriIngredient) {
+        this.uriIngredient.setValue(uriIngredient);
+    }
+
+    public MutableLiveData<Uri> getUriBarcode() {
+        return uriBarcode;
+    }
+
+    public void setUriBarcode(MutableLiveData<Uri> uriBarcode) {
+        this.uriBarcode = uriBarcode;
     }
 }

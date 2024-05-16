@@ -3,6 +3,7 @@ package com.example.shoppingassistant.ui.home;
 import android.Manifest;
 import android.app.Activity;
 import android.content.Intent;
+import android.content.IntentSender;
 import android.content.pm.PackageManager;
 import android.graphics.Bitmap;
 import android.graphics.Matrix;
@@ -18,8 +19,10 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Toast;
 
+import androidx.activity.result.ActivityResult;
 import androidx.activity.result.ActivityResultCallback;
 import androidx.activity.result.ActivityResultLauncher;
+import androidx.activity.result.IntentSenderRequest;
 import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.annotation.NonNull;
 import androidx.camera.core.Camera;
@@ -33,6 +36,7 @@ import androidx.camera.lifecycle.ProcessCameraProvider;
 import androidx.core.content.ContextCompat;
 import androidx.fragment.app.Fragment;
 import androidx.lifecycle.LifecycleOwner;
+import androidx.lifecycle.MutableLiveData;
 import androidx.lifecycle.ViewModelProvider;
 import androidx.navigation.Navigation;
 
@@ -41,11 +45,22 @@ import com.canhub.cropper.CropImageContractOptions;
 import com.canhub.cropper.CropImageOptions;
 import com.example.shoppingassistant.databinding.FragmentHomeBinding;
 import com.google.common.util.concurrent.ListenableFuture;
+import com.google.mlkit.vision.barcode.BarcodeScanner;
+import com.google.mlkit.vision.barcode.BarcodeScannerOptions;
+import com.google.mlkit.vision.barcode.common.Barcode;
+import com.google.mlkit.vision.documentscanner.GmsDocumentScanner;
+import com.google.mlkit.vision.documentscanner.GmsDocumentScannerOptions;
+import com.google.mlkit.vision.documentscanner.GmsDocumentScanning;
+import com.google.mlkit.vision.documentscanner.GmsDocumentScanningResult;
 
 import java.io.ByteArrayOutputStream;
 import java.text.SimpleDateFormat;
+import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Objects;
+
+import javax.xml.transform.Result;
 
 /**
  * Navigates to result fragment 2 places -
@@ -66,9 +81,10 @@ public class HomeFragment extends Fragment {
     // int for front facing camera
     private static final int BACK_CAMERA = CameraSelector.LENS_FACING_BACK;
     private ProcessCameraProvider cameraProvider;
-    ImageCapture imageCapture;
+    private ImageCapture imageCapture;
     private Camera camera;
     private Uri tempCopy;
+    private HomeViewModel homeViewModel;
 
     /**
      * <String[]>: To make it extendable for multiple permissions
@@ -94,8 +110,7 @@ public class HomeFragment extends Fragment {
     public View onCreateView(@NonNull LayoutInflater inflater,
                              ViewGroup container, Bundle savedInstanceState) {
 
-        HomeViewModel homeViewModel =
-                new ViewModelProvider(requireActivity()).get(HomeViewModel.class);
+        homeViewModel = new ViewModelProvider(requireActivity()).get(HomeViewModel.class);
 
         binding = FragmentHomeBinding.inflate(inflater, container, false);
         View root = binding.getRoot();
@@ -113,7 +128,7 @@ public class HomeFragment extends Fragment {
                 result -> {
                     if (result.isSuccessful()) {
                         Uri uri = result.getUriContent();
-                        homeViewModel.setUri(uri);
+                        homeViewModel.setUriIngredient(uri);
                         Navigation.findNavController(root).navigate(HomeFragmentDirections.actionNavHomeToNavResult());
                     } else {
                         Log.e(LOG_TAG, "Couldn't crop image for some in (ActivityResultLauncher<CropImageContractOptions>) cropLauncher");
@@ -139,6 +154,7 @@ public class HomeFragment extends Fragment {
                     }
                 }
         );
+//        getting image from gallery which then goes through cropper
         binding.homeGallery.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
@@ -173,9 +189,38 @@ public class HomeFragment extends Fragment {
                 });
             }
         });
-
+//        GmsDocumentScannerOptions scannerOptions = new GmsDocumentScannerOptions.Builder()
+//                .setGalleryImportAllowed(true)
+//                .setPageLimit(2)
+//                .setResultFormats(GmsDocumentScannerOptions.RESULT_FORMAT_JPEG)
+//                .setScannerMode(GmsDocumentScannerOptions.SCANNER_MODE_FULL)
+//                .build();
+//        GmsDocumentScanner scanner = GmsDocumentScanning.getClient(scannerOptions);
+//        ActivityResultLauncher<IntentSenderRequest> scannerLauncher = registerForActivityResult(
+//                new ActivityResultContracts.StartIntentSenderForResult(),
+//                this::handleScanningActivity
+//        );
+//        scanner.getStartScanIntent(requireActivity())
+//                .addOnSuccessListener((IntentSender intentSender) ->
+//                        scannerLauncher.launch(new IntentSenderRequest.Builder(intentSender).build()))
+//                .addOnFailureListener((Exception e) -> {
+//                    Log.e(LOG_TAG, e.toString());
+//                });
         return root;
     }
+
+//    private void handleScanningActivity(ActivityResult result) {
+//        if (result.getResultCode() == Activity.RESULT_OK) {
+//            GmsDocumentScanningResult scanningResult = GmsDocumentScanningResult.fromActivityResultIntent(result.getData());
+//            List<GmsDocumentScanningResult.Page> pages  = scanningResult.getPages();
+//            // (REFACTOR) hardcoding ingredient and image page index (Order 0 -> Ingredients, 1 -> Barcode Scanner)
+//            homeViewModel.setUriIngredient(new MutableLiveData<>(Objects.requireNonNull(pages).get(0).getImageUri()));
+//            homeViewModel.setUriBarcode(new MutableLiveData<>(Objects.requireNonNull(pages).get(1).getImageUri()));
+//            Navigation.findNavController(binding.getRoot()).navigate(HomeFragmentDirections.actionNavHomeToNavResult());
+//        } else {
+//            Log.e(LOG_TAG, "Couldn't get successful result upon scanning");
+//        }
+//    }
 
     private void launchCropper(Uri uri) {
         // image options
@@ -259,12 +304,16 @@ public class HomeFragment extends Fragment {
     }
 
     private Camera configCamera(ProcessCameraProvider cameraProvider, int cameraType) {
-        Preview preview = new Preview.Builder().build();
+        Preview preview = new Preview.Builder()
+                .setTargetRotation(binding.cameraView.getDisplay().getRotation())
+                .build();
         preview.setSurfaceProvider(binding.cameraView.getSurfaceProvider());
         imageCapture = new ImageCapture.Builder()
                 .setCaptureMode(ImageCapture.CAPTURE_MODE_MAXIMIZE_QUALITY)
+                .setJpegQuality(100)
                 .build();
         CameraSelector cameraSelector = new CameraSelector.Builder().requireLensFacing(cameraType).build();
+        cameraProvider.unbindAll();
         return cameraProvider.bindToLifecycle((LifecycleOwner) this, cameraSelector, imageCapture, preview);
     }
 

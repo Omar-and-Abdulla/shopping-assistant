@@ -1,3 +1,6 @@
+#ignore openCV/ 
+openCV/
+
 # Compiled class file
 *.class
 
